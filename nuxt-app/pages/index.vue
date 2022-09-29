@@ -52,7 +52,7 @@ const submit = async (e: {nameForm: string}) => {
   reader.onload = async function() {
     image.src = reader.result
     image.width = 100
-    image.height = 200
+    image.height = 100
     const classifyPredictions = await model.classify(image)
     predictions.value = classifyPredictions
     console.log(classifyPredictions)
