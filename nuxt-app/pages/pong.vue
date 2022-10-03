@@ -331,6 +331,17 @@ var Game = {
 	loop: function () {
 		Pong.update();
 		Pong.draw();
+		// データを取得するコード
+		// コンソールが大変なことになるのでコメントアウトする.
+		// const canvas = Pong.canvas.toDataURL("image/jpeg")
+		// console.log(canvas)
+
+		// Score取得
+		console.log(Pong.player.score)
+		console.log(Pong.paddle.score)
+
+		// ゲーム終了
+		console.log(Pong.over)
 
 		// If the game is not over, draw the next frame.
 		if (!Pong.over) requestAnimationFrame(Pong.loop);
