@@ -26,19 +26,20 @@ const rounds = [5, 5, 3, 3, 2];
 const colors = ['#1abc9c', '#2ecc71', '#3498db', '#e74c3c', '#9b59b6'];
 
 // The ball object (The cube that bounces back and forth)
-const Ball = {
-	new: function (incrementedSpeed) {
-		return {
-			width: 18,
-			height: 18,
-			x: (this.canvas.width / 2) - 9,
-			y: (this.canvas.height / 2) - 9,
-			moveX: DIRECTION.IDLE,
-			moveY: DIRECTION.IDLE,
-			speed: incrementedSpeed || 9
-		};
+class Ball {
+	width: number = 18
+	height: number = 18
+	x: number
+	y: number
+	moveX: number = DIRECTION.IDLE
+	moveY: number = DIRECTION.IDLE
+	speed: number
+	constructor(incrementedSpeed: number, canvas: any) {
+		this.x = (canvas.width / 2) - 9,
+		this.y = (canvas.height / 2) - 9,
+		this.speed = incrementedSpeed || 9
 	}
-};
+}
 
 // The paddle object (The two lines that move up and down)
 class Paddle {
@@ -82,7 +83,7 @@ class Game {
 
 			this.player = new Paddle('left', this.canvas)
 			this.paddle = new Paddle('right', this.canvas)
-			this.ball = Ball.new.call(this);
+			this.ball = new Ball(0, this.canvas)
 
 			this.paddle.speed = 8;
 			this.running = this.over = false;
@@ -380,7 +381,7 @@ class Game {
 
 		// Reset the ball location, the player turns and set a delay before the next round begins.
 		_resetTurn(victor, loser) {
-			this.ball = Ball.new.call(this, this.ball.speed);
+			this.ball = new Ball(this.ball.speed, this.canvas)
 			this.turn = loser;
 			this.timer = (new Date()).getTime();
 
