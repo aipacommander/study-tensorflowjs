@@ -41,19 +41,19 @@ const Ball = {
 };
 
 // The paddle object (The two lines that move up and down)
-const Paddle = {
-	new: function (side) {
-		return {
-			width: 18,
-			height: 70,
-			x: side === 'left' ? 150 : this.canvas.width - 150,
-			y: (this.canvas.height / 2) - 35,
-			score: 0,
-			move: DIRECTION.IDLE,
-			speed: 10
-		};
+class Paddle {
+	width: number = 18
+	height: number = 70
+	x: number
+	y: number
+	score: number = 0
+	move: number = DIRECTION.IDLE
+	speed: number = 10
+	constructor(side: string, canvas: any) {
+		this.x = side === 'left' ? 150 : canvas.width - 150
+		this.y = (canvas.height / 2) - 35
 	}
-};
+}
 
 class Game {
 	private canvas: any
@@ -80,8 +80,8 @@ class Game {
 			this.canvas.style.width = (this.canvas.width / 2) + 'px';
 			this.canvas.style.height = (this.canvas.height / 2) + 'px';
 
-			this.player = Paddle.new.call(this, 'left');
-			this.paddle = Paddle.new.call(this, 'right');
+			this.player = new Paddle('left', this.canvas)
+			this.paddle = new Paddle('right', this.canvas)
 			this.ball = Ball.new.call(this);
 
 			this.paddle.speed = 8;
@@ -90,8 +90,8 @@ class Game {
 			this.timer = this.round = 0;
 			this.color = '#2c3e50';
 
-			this.menu();
-			this.listen();
+			this.menu()
+			this.listen()
 		}
 
 	endGameMenu(text) {
