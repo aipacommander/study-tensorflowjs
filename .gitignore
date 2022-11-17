@@ -1,0 +1,3 @@
+nuxt-app/public/models/*.vrm
+nuxt-app/static/models/*.vrm
+

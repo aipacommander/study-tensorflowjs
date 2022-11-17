@@ -2,7 +2,13 @@ import * as posedetection from '@tensorflow-models/pose-detection'
 import { Camera } from './camera'
 import { modelConfig } from './consistans'
 import '@tensorflow/tfjs-backend-webgl'
+import * as tfjsWasm from '@tensorflow/tfjs-backend-wasm'
 import '@mediapipe/pose'
+
+console.log(tfjsWasm.version_wasm)
+tfjsWasm.setWasmPaths(
+    `https://cdn.jsdelivr.net/npm/@tensorflow/tfjs-backend-wasm@${
+        tfjsWasm.version_wasm}/dist/`);
 
 
 async function createDetector() {
