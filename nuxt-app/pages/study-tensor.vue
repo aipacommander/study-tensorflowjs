@@ -4,7 +4,7 @@
     </h1>
     <div>
         <a href="#">テスト</a>
-        <video id="video"></video>
+        <video id="video" muted></video>
         <canvas id="canvas"></canvas>
     </div>
 </template>
@@ -12,7 +12,7 @@
 <script setup lang="ts">
 import * as tf from '@tensorflow/tfjs'
 import * as poseDetection from '@tensorflow-models/pose-detection'
-import '@tensorflow/tfjs-backend-webgl';
+import '@tensorflow/tfjs-backend-webgl'
 import { onMounted } from 'vue';
 
 const model = poseDetection.SupportedModels.BlazePose
@@ -28,7 +28,7 @@ onMounted(async() => {
         video: true,
         audio: false,
     }).then(async(stream) => {
-        video.srcObject = stream;
+        video.srcObject = stream
         video.play()
         const canvas = document.getElementById('canvas')
         const ctx = canvas.getContext('2d')

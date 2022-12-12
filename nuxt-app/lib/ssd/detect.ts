@@ -1,74 +1,124 @@
 import * as tf from '@tensorflow/tfjs'
+import * as tfjsWasm from '@tensorflow/tfjs-backend-wasm'
 import { CLASSES } from './labels'
+import { registerBackend } from '@tensorflow/tfjs-core';
+import { BackendWasm, init } from '@tensorflow/tfjs-backend-wasm/dist/backend_wasm'
+
+// registerBackend('wasm', async () => {
+//     const { wasm } = await init();
+//     return new BackendWasm(wasm);
+// }, 2)
+
+console.log(tfjsWasm.version_wasm)
+tfjsWasm.setWasmPaths(
+    `https://cdn.jsdelivr.net/npm/@tensorflow/tfjs-backend-wasm@${tfjsWasm.version_wasm}/dist/`)
+
 
 export const loadModel = async () => {
-    await tf.ready();
-    const modelPath = "https://tfhub.dev/tensorflow/tfjs-model/ssd_mobilenet_v2/1/default/1";
-    return await tf.loadGraphModel(modelPath, { fromTFHub: true });
+    // バックエンドの読み込みを待つ
+    tf.setBackend('wasm')
+    await tf.ready()
+    // モデルのロードを待つ
+    const modelPath = "https://tfhub.dev/tensorflow/tfjs-model/ssd_mobilenet_v2/1/default/1"
+    console.log(tf.getBackend())
+    return await tf.loadGraphModel(modelPath, { fromTFHub: true })
 }
 
-export const setupWebcam = async (mysteryRef, detectionRef) => {
-    const mystery = mysteryRef.value
+export const setupWebcam = async (videoRef, detectionRef) => {
+    const video = videoRef.value
+    const canvas = detectionRef.value
     if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
+        // カメラからデータを取得する準備
         const webcamStream = await navigator.mediaDevices.getUserMedia({
             audio: false,
             video: {
-                facingMode: "user",
+                facingMode: 'user', // フロントカメラ
             },
         });
 
-        if ("srcObject" in mystery) {
-            console.log(mystery.srcObject)
-            mystery.srcObject = webcamStream
-        } else {
-            console.log(window.URL, webcamStream)
-            mystery.src = window.URL.createObjectURL(webcamStream)
-        }
-
+        // <video>で表示できるようにする
+        video.srcObject = webcamStream
         return new Promise((resolve, _) => {
-            mystery.onloadedmetadata = () => {
-                // Prep Canvas
-                console.log(detectionRef)
-                const detection = detectionRef.value
-                const ctx = detection.getContext("2d");
-                const imgWidth = mystery.clientWidth;
-                const imgHeight = mystery.clientHeight;
-                detection.width = imgWidth;
-                detection.height = imgHeight;
-                ctx.font = "16px sans-serif";
-                ctx.textBaseline = "top";
-                resolve([ctx, imgHeight, imgWidth]);
-            };
-        });
+            // <video>にデータが流れたら発火
+            video.onloadedmetadata = () => {
+                // <canvas>に流す
+                const ctx = canvas.getContext('2d')
+                const imgWidth = video.clientWidth
+                const imgHeight = video.clientHeight
+                canvas.width = imgWidth
+                canvas.height = imgHeight
+                ctx.font = '16px sans-serif'
+                ctx.textBaseline = 'top'
+                resolve([ctx, imgHeight, imgWidth])
+            }
+        })
     } else {
         alert("No webcam - sorry!");
     }
 }
 
-export const doStuff = async (mysteryRef, detectionRef) => {
+export const doStuff = async (video, canvas, mode) => {
     try {
         const model = await loadModel()
-        const camDetails = await setupWebcam(mysteryRef, detectionRef)
-        performDetections(model, mysteryRef, camDetails)
+        const cameraDetails = await setupWebcam(video, canvas)
+        if (mode === 'filter') {
+            performDetections(model, video, cameraDetails)
+        } else {
+            detections(model, video, cameraDetails)
+        }
     } catch (e) {
         console.error(e)
     }
 }
 
+export const detections = async(model, videoRef, cameraDetails) => {
+    const video = videoRef.value
+    const [ctx, imgHeight, imgWidth] = cameraDetails
+    // Tensor画像に変換
+    const myTensor = tf.browser.fromPixels(video)
+    // モデルの入力次元は [1, 縦サイズ, 横サイズ, RGB]
+    // なので、3D(1枚の画像)を4Dにする
+    const readyfied = tf.expandDims(myTensor, 0)
+    // モデルに入力!!
+    const results = await model.executeAsync(readyfied)
+
+    // boxes
+    const boxes = await results[1].squeeze().array()
+    ctx.width = imgWidth
+    ctx.height = imgHeight
+    // 前の結果を消す
+    ctx.clearRect(0, 0, ctx.width, ctx.height)
+    boxes.forEach((box, _) => {
+      ctx.strokeStyle = "#0F0"
+      ctx.lineWidth = 1
+      const startY = box[0] * imgHeight
+      const startX = box[1] * imgWidth
+      const height = (box[2] - box[0]) * imgHeight
+      const width = (box[3] - box[1]) * imgWidth
+      ctx.strokeRect(startX, startY, width, height)
+    })
+
+    // 無限に回す
+    requestAnimationFrame(() => {
+        detections(model, videoRef, cameraDetails)
+    })
+}
+
 export const performDetections = async (model, mysteryRef, camDetails) => {
-    const [ctx, imgHeight, imgWidth] = camDetails;
+    const [ctx, imgHeight, imgWidth] = camDetails
     const mystery = mysteryRef.value
     const myTensor = tf.browser.fromPixels(mystery)
-    const readyfied = tf.expandDims(myTensor, 0);
+    const readyfied = tf.expandDims(myTensor, 0)
     const results = await model.executeAsync(readyfied)
 
     // Get a clean tensor of top indices
-    const detectionThreshold = 0.4;
-    const iouThreshold = 0.5;
-    const maxBoxes = 20;
-    const prominentDetection = tf.topk(results[0]);
-    const justBoxes = results[1].squeeze();
-    const justValues = prominentDetection.values.squeeze();
+    const detectionThreshold = 0.4
+    const iouThreshold = 0.5
+    const maxBoxes = 100
+    const prominentDetection = tf.topk(results[0])
+    // const prominentDetection = results[0]
+    const justBoxes = results[1].squeeze()
+    const justValues = prominentDetection.values.squeeze()
 
     // Move results back to JavaScript in parallel
     const [maxIndices, scores, boxes] = await Promise.all([
@@ -79,13 +129,13 @@ export const performDetections = async (model, mysteryRef, camDetails) => {
 
     // https://arxiv.org/pdf/1704.04503.pdf, use Async to keep visuals
     const nmsDetections = await tf.image.nonMaxSuppressionWithScoreAsync(
-        justBoxes, // [numBoxes, 4]
-        justValues, // [numBoxes]
-        maxBoxes,
-        iouThreshold,
-        detectionThreshold,
+        justBoxes,           // bounding boxes
+        justValues,          // 予測確率
+        maxBoxes,            // 予測確率が高い順に取得する数
+        iouThreshold,        // iouの閾値
+        detectionThreshold,  // 予測確率の閾値
         1 // 0 is normal NMS, 1 is Soft-NMS for overlapping support
-    );
+    )
 
     const chosen = await nmsDetections.selectedIndices.data();
     // Mega Clean

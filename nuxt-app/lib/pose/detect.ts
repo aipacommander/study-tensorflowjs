@@ -1,14 +1,17 @@
 import * as posedetection from '@tensorflow-models/pose-detection'
 import { Camera } from './camera'
 import { modelConfig } from './consistans'
-import '@tensorflow/tfjs-backend-webgl'
-import * as tfjsWasm from '@tensorflow/tfjs-backend-wasm'
+// import * as tfjsWasm from '@tensorflow/tfjs-backend-wasm'
+import { MyVRM } from './my-vrm'
 import '@mediapipe/pose'
 
-console.log(tfjsWasm.version_wasm)
-tfjsWasm.setWasmPaths(
-    `https://cdn.jsdelivr.net/npm/@tensorflow/tfjs-backend-wasm@${
-        tfjsWasm.version_wasm}/dist/`);
+// console.log(tfjsWasm.version_wasm)
+// tfjsWasm.setWasmPaths(
+//     `https://cdn.jsdelivr.net/npm/@tensorflow/tfjs-backend-wasm@${
+//         tfjsWasm.version_wasm}/dist/`);
+
+import * as tf from '@tensorflow/tfjs'
+tf.setBackend('webgl')
 
 
 async function createDetector() {
@@ -48,9 +51,13 @@ async function renderPrediction(camera, detector) {
     })
 }
 
-export const main = async (video: HTMLVideoElement, canvas: HTMLCanvasElement, canvasWrapper: HTMLDivElement, scatterGlContainer: HTMLDivElement) => {
+export const main = async (video: HTMLVideoElement, canvas: HTMLCanvasElement,
+        canvasWrapper: HTMLDivElement, scatterGlContainer: HTMLDivElement,
+        vrm: HTMLDivElement
+    ) => {
     const cameraOptions = { targetFPS: 60, sizeOption: '640 X 480' }
-    const camera = await Camera.setupCamera(cameraOptions, video, canvas, canvasWrapper, scatterGlContainer)
+    const myVrm = await MyVRM.setup(vrm)
+    const camera = await Camera.setupCamera(cameraOptions, video, canvas, canvasWrapper, scatterGlContainer, myVrm)
     const detector = await createDetector()
     renderPrediction(camera, detector)
 }

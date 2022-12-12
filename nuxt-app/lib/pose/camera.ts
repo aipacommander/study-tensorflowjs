@@ -1,6 +1,7 @@
 import * as posedetection from '@tensorflow-models/pose-detection'
 import { ScatterGL } from 'scatter-gl/src/index'
 import { modelConfig, DEFAULT_LINE_WIDTH, DEFAULT_RADIUS, model } from './consistans'
+import { MyVRM } from './my-vrm'
 
 const VIDEO_SIZE = {
     '640 X 480': { width: 640, height: 480 },
@@ -16,8 +17,9 @@ export class Camera {
     private scatterGLEl: HTMLDivElement
     private scatterGL: ScatterGL
     private scatterGLHasInitialized: boolean
+    private myVrm: MyVRM
 
-    constructor(video: HTMLVideoElement, canvas: HTMLCanvasElement, scatterGLEl: HTMLDivElement) {
+    constructor(video: HTMLVideoElement, canvas: HTMLCanvasElement, scatterGLEl: HTMLDivElement, myVrm: MyVRM) {
         this.video = video
         this.canvas = canvas
         this.ctx = this.canvas.getContext('2d')
@@ -28,9 +30,10 @@ export class Camera {
             'styles': { polyline: { defaultOpacity: 1, deselectedOpacity: 1 } }
         })
         this.scatterGLHasInitialized = false
+        this.myVrm = myVrm
     }
 
-    static async setupCamera(cameraParam: any, video: HTMLVideoElement, canvas: HTMLCanvasElement, canvasContainer: HTMLDivElement, scatterGlContainer: HTMLDivElement) {
+    static async setupCamera(cameraParam: any, video: HTMLVideoElement, canvas: HTMLCanvasElement, canvasContainer: HTMLDivElement, scatterGlContainer: HTMLDivElement, myVrm: MyVRM) {
         if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
             throw new Error(
                 'Browser API navigator.mediaDevices.getUserMedia not available'
@@ -41,12 +44,12 @@ export class Camera {
         const videoConfig = {
             'audio': false,
             'video': {
-                width: { ideal: VIDEO_SIZE['640 X 480'].width },
-                height: { ideal: VIDEO_SIZE['640 X 480'].height },
+                width: { ideal: VIDEO_SIZE['360 X 270'].width },
+                height: { ideal: VIDEO_SIZE['360 X 270'].height },
                 frameRate: { ideal: targetFPS }
             }
         }
-        const camera = new Camera(video, canvas, scatterGlContainer)
+        const camera = new Camera(video, canvas, scatterGlContainer, myVrm)
         camera.video.srcObject = await navigator.mediaDevices.getUserMedia(videoConfig)
         camera.video.play()
         camera.video.style.display = 'none'
@@ -64,10 +67,10 @@ export class Camera {
         camera.ctx.translate(camera.canvas.width, 0)
         camera.ctx.scale(-1, 1)
 
-        camera.scatterGLEl.style.width = `${videoWidth}px`
-        camera.scatterGLEl.style.height = `${videoHeight}px`
-        camera.scatterGL.resize()
-        camera.scatterGLEl.style.display = 'inline-block'
+        // camera.scatterGLEl.style.width = `${videoWidth}px`
+        // camera.scatterGLEl.style.height = `${videoHeight}px`
+        // camera.scatterGL.resize()
+        // camera.scatterGLEl.style.display = 'inline-block'
 
         return camera
     }
@@ -106,7 +109,8 @@ export class Camera {
             this.drawSkeleton(pose.keypoints)
         }
         if (pose.keypoints3D != null && modelConfig.render3D) {
-            this.drawKeypoints3D(pose.keypoints3D)
+            // this.drawKeypoints3D(pose.keypoints3D)
+            this.myVrm.update(pose.keypoints, pose.keypoints3D)
         }
     }
 
@@ -117,7 +121,6 @@ export class Camera {
     drawKeypoints(keypoints) {
         const keypointInd =
             posedetection.util.getKeypointIndexBySide(model);
-        console.log(keypointInd)
         this.ctx.fillStyle = 'Red';
         this.ctx.strokeStyle = 'White';
         this.ctx.lineWidth = DEFAULT_LINE_WIDTH;
@@ -211,8 +214,8 @@ export class Camera {
             this.scatterGL.updateDataset(dataset)
         }
         const connections = posedetection.util.getAdjacentPairs(model)
-        const sequences = connections.map(pair => ({ indices: pair }))
-        this.scatterGL.setSequences(sequences)
+        // const sequences = connections.map(pair => ({ indices: pair }))
+        // this.scatterGL.setSequences(sequences)
         this.scatterGLHasInitialized = true
     }
 }

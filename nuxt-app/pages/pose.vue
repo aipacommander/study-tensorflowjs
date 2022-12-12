@@ -1,5 +1,4 @@
 <template>
-    <h1>テスト</h1>
     <div id="main">
       <div class="container">
         <div class="canvas-wrapper" ref="canvasWrapper">
@@ -8,9 +7,10 @@
             height: auto;
             ">
           </video>
-          <canvas id="output" ref="output" style="position: absolute; left: 0;"></canvas>
+          <canvas id="output" ref="output" style="position: absolute; left: 0; bottom: 0;"></canvas>
+          <div id="vrm" ref="vrm"></div>
         </div>
-        <div id="scatter-gl-container" ref="scatterGlContainer"></div>
+        <div id="scatter-gl-container" ref="scatterGlContainer" style="display: none"></div>
       </div>
     </div>
 </template>
@@ -23,18 +23,22 @@ const canvasWrapper = ref<HTMLDivElement>(null)
 const video = ref<HTMLVideoElement>(null)
 const output = ref<HTMLCanvasElement>(null)  // canvas
 const scatterGlContainer = ref<HTMLDivElement>(null)
+const vrm = ref<HTMLDivElement>()
 onMounted(() => {
-    main(video.value, output.value, canvasWrapper.value, scatterGlContainer.value)
+    main(
+      video.value,
+      output.value,
+      canvasWrapper.value,
+      scatterGlContainer.value,
+      vrm.value
+    )
 })
 </script>
 
 <style>
 #main {
-  position: relative;
-  margin: 0;
 }
 #canvas-wrapper,
 #scatter-gl-container {
-  position: relative;
 }
 </style>

@@ -24,6 +24,7 @@
     "@tensorflow/tfjs-core": "^4.0.0",
     "@types/three": "^0.146.0",
     "scatter-gl": "^0.0.13",
+    "stats.js": "^0.17.0",
     "three": "^0.146.0"
   }
 }
